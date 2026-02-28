@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hollywood Cut - Jazz & Western Edition</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@1,700&family=Rye&display=swap"
+        rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { 'paper': '#FAF9F6', 'klein': '#002FA7', 'sunset': '#FF4500', 'saddle': '#8B4513' },
+                    fontFamily: { 'cinematic': ['"Playfair Display"', 'serif'], 'western': ['Rye', 'cursive'], 'ui': ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #FAF9F6;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .monitor-glow {
+            box-shadow: inset 0 0 40px rgba(0, 47, 167, 0.15);
+        }
+
+        .grain-bg {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                filter: contrast(0.5) brightness(2);
+            }
+
+            to {
+                opacity: 1;
+                filter: contrast(1) brightness(1);
+            }
+        }
+
+        .result-image {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+
+<body class="bg-paper text-klein grain-bg">
+    <div id="root">
+        <div class="flex flex-col items-center justify-center min-h-screen">
+            <div class="w-16 h-16 border-4 border-klein border-t-sunset rounded-full animate-spin mb-4"></div>
+            <p class="font-cinematic italic text-xl opacity-50">Syncing with Hollywood...</p>
+        </div>
+    </div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const MovieIcon = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" /><line x1="7" y1="2" x2="7" y2="22" /><line x1="17" y1="2" x2="17" y2="22" /><line x1="2" y1="12" x2="22" y2="12" /><line x1="2" y1="7" x2="7" y2="7" /><line x1="2" y1="17" x2="7" y2="17" /><line x1="17" y1="17" x2="22" y2="17" /><line x1="17" y1="7" x2="22" y2="7" /></svg>
+        );
+
+        const StarIcon = ({ size = 24, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+        );
+
+        function WelcomeScreen({ onComplete }) {
+            const [key, setKey] = useState("");
+            const handleEnter = () => { if (key.trim().length > 10) { localStorage.setItem("gemini_api_key", key); onComplete(); } };
+            return (
+                <div className="fixed inset-0 flex items-center justify-center bg-paper z-50 p-6">
+                    <div className="border-4 border-klein p-12 bg-white max-w-lg w-full text-center shadow-[16px_16px_0_#002FA7]">
+                        <div className="w-24 h-24 bg-klein rounded-full flex items-center justify-center mb-10 mx-auto ring-4 ring-sunset shadow-xl">
+                            <MovieIcon size={48} className="text-white" />
+                        </div>
+                        <h1 className="font-cinematic italic text-6xl mb-12 tracking-tight">Hollywood Cut</h1>
+                        <input
+                            type="password"
+                            value={key}
+                            onChange={e => setKey(e.target.value)}
+                            placeholder="DIRECTOR'S KEY (AIza...)"
+                            className="w-full p-5 border-2 border-klein mb-8 text-center text-xl font-mono focus:ring-4 ring-sunset outline-none"
+                            onKeyDown={e => e.key === 'Enter' && handleEnter()}
+                        />
+                        <button onClick={handleEnter} className="w-full py-6 bg-sunset text-white text-3xl font-bold uppercase hover:bg-klein transition-all active:scale-95 shadow-lg">
+                            BOARDING NOW ★
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [apiKey, setApiKey] = useState(localStorage.getItem("gemini_api_key"));
+            const [movie, setMovie] = useState("");
+            const [imgB64, setImgB64] = useState(null);
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [result, setResult] = useState(null);
+
+            // ✅ useEffect 必须在任何条件 return 之前 —— 修复 React Error #310
+            useEffect(() => {
+                fetch('default-cast.png')
+                    .then(res => {
+                        if (!res.ok) throw new Error("not found");
+                        return res.blob();
+                    })
+                    .then(blob => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setImgB64(reader.result.split(',')[1]);
+                        reader.readAsDataURL(blob);
+                    })
+                    .catch(e => console.log('No default image'));
+            }, []);
+
+            if (!apiKey) return <WelcomeScreen onComplete={() => setApiKey(localStorage.getItem("gemini_api_key"))} />;
+
+            const handleFile = (e) => {
+                const f = e.target.files[0];
+                if (f) { const r = new FileReader(); r.onloadend = () => setImgB64(r.result.split(',')[1]); r.readAsDataURL(f); }
+            };
+
+            const runAction = async () => {
+                if (!imgB64) return alert("Director: Please upload the portrait first.");
+                setIsGenerating(true);
+
+                try {
+                    const { GoogleGenAI } = await import("https://esm.run/@google/genai");
+                    const ai = new GoogleGenAI({ apiKey: apiKey });
+
+                    const promptStr = `A highly realistic behind-the-scenes movie set photograph for the film "${movie || 'DUNE'}". The actor is wearing a cinematic costume. Film set elements like cameras, lighting, and microphones are subtly visible in the background. Cinematic lighting, Kodak Vision3 500T film grain, vintage moody vibe. The character faces the camera with a confident expression. High detail, photorealistic.`;
+
+                    const response = await ai.models.generateImages({
+                        model: 'imagen-3.0-generate-002',
+                        prompt: promptStr,
+                        config: {
+                            numberOfImages: 1,
+                            aspectRatio: "16:9",
+                            outputMimeType: "image/jpeg"
+                        }
+                    });
+
+                    if (response.generatedImages && response.generatedImages.length > 0) {
+                        setResult(response.generatedImages[0].image.imageBytes);
+                    } else {
+                        throw new Error("No image data returned from AI.");
+                    }
+                } catch (e) {
+                    console.error("AI Generation failed:", e);
+                    alert("AI Error: " + e.message + " (Returning original image as fallback)");
+                    setResult(imgB64);
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            return (
+                <div className="h-screen flex flex-col p-8 overflow-auto container mx-auto" >
+                    <header className="flex justify-between items-center mb-16 px-4">
+                        <div className="flex items-center gap-6">
+                            <StarIcon size={40} className="text-sunset" />
+                            <h1 className="font-cinematic italic text-6xl">Hollywood Cut</h1>
+                        </div>
+                        <button
+                            onClick={() => { localStorage.removeItem("gemini_api_key"); setApiKey(""); }}
+                            className="font-mono text-[11px] border-2 border-klein px-6 py-2 hover:bg-klein hover:text-white transition-all uppercase tracking-[0.2em] font-black"
+                        >RESET</button>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 flex-1 pb-16 px-4">
+                        <section className="lg:col-span-12 xl:col-span-5 space-y-12">
+                            <div className="bg-white border-4 border-klein relative h-96 group overflow-hidden shadow-[14px_14px_0_#002FA7]">
+                                <input type="file" onChange={handleFile} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                {imgB64 ? <img src={`data:image/jpeg;base64,${imgB64}`} className="w-full h-full object-cover" /> : (
+                                    <div className="flex flex-col items-center justify-center h-full opacity-20 group-hover:opacity-100 transition-all duration-700">
+                                        <div className="text-klein scale-[3] mb-12"><MovieIcon size={48} /></div>
+                                        <p className="font-mono font-black text-lg tracking-[0.5em]">LOAD PORTRAIT</p>
+                                    </div>
+                                )}
+                                <div className="absolute top-5 left-5 bg-klein text-white text-[11px] px-3 py-1 font-mono shadow-md font-bold uppercase tracking-widest">CAST_01</div>
+                            </div>
+
+                            <div className="bg-white border-2 border-klein p-10 space-y-10 shadow-[14px_14px_0_#8B4513]">
+                                <div>
+                                    <h3 className="text-[11px] font-mono text-saddle font-black mb-4 uppercase tracking-[0.4em] opacity-40 leading-none">Scenario</h3>
+                                    <input value={movie} onChange={e => setMovie(e.target.value)} placeholder="DUNE / MAD MAX" className="w-full border-b-2 border-klein text-4xl font-cinematic italic outline-none py-3 bg-transparent text-klein placeholder:opacity-10" />
+                                </div>
+                                <div className="flex gap-6">
+                                    <button className="flex-1 border-2 border-klein py-4 font-mono text-xs bg-sunset text-white font-black tracking-[0.3em]">9:16 CINEMA</button>
+                                    <button className="flex-1 border-2 border-klein py-4 font-mono text-xs opacity-40 font-black tracking-[0.3em]">16:9 WIDE</button>
+                                </div>
+                            </div>
+
+                            <button onClick={runAction} disabled={isGenerating} className={`w-full py-12 text-6xl font-cinematic font-bold border-4 border-klein text-white shadow-[18px_18px_0_#002FA7] active:translate-x-4 active:translate-y-4 active:shadow-none transition-all ${isGenerating ? 'bg-gray-400 border-gray-500 shadow-gray-500 cursor-wait' : 'bg-sunset hover:bg-[#E63E00]'}`}>
+                                {isGenerating ? "DEVELOPING..." : "ACTION ★"}
+                            </button>
+                        </section>
+
+                        <section className="lg:col-span-12 xl:col-span-7 bg-white border-4 border-klein flex items-center justify-center monitor-glow relative min-h-[500px]">
+                            {isGenerating ? (
+                                <div className="flex flex-col items-center gap-12">
+                                    <StarIcon size={64} className="text-sunset animate-spin" />
+                                    <p className="font-mono tracking-[2em] text-sunset text-sm font-black animate-pulse">PROCESSING</p>
+                                </div>
+                            ) : result ? (
+                                <div className="p-4 w-full h-full relative group">
+                                    <img src={`data:image/jpeg;base64,${result}`} className="w-full h-full object-contain result-image" />
+                                </div>
+                            ) : (
+                                <div className="text-center opacity-[0.05] pointer-events-none group">
+                                    <h2 className="font-western text-[16rem] leading-none mb-0 tracking-tighter">SIGNAL</h2>
+                                    <p className="font-mono text-5xl -mt-12 tracking-[1.5em] font-black">MISSING</p>
+                                </div>
+                            )}
+                            <div className="absolute top-8 left-8 opacity-40 text-xs font-mono uppercase font-black tracking-[0.5em]">Monitor_01</div>
+                        </section>
+                    </div>
+                </div>
+            );
+        }
+
+        const rootLayout = document.getElementById("root");
+        if (rootLayout) {
+            const root = ReactDOM.createRoot(rootLayout);
+            root.render(<App />);
+        }
+    </script>
+</body>
+
+</html>
