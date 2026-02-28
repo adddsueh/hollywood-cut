@@ -142,34 +142,52 @@
                 setIsGenerating(true);
 
                 try {
-                    const { GoogleGenAI } = await import("https://esm.run/@google/genai");
-                    const ai = new GoogleGenAI({ apiKey: apiKey });
+                    const promptStr = `Using the uploaded portrait as the sole face reference, generate a highly realistic behind-the-scenes movie set photograph for the film "${movie || 'DUNE'}". Preserve the person's exact facial features, bone structure, skin tone, hairstyle, and expression from the reference photo. Place them on a cinematic film set wearing a costume appropriate for the movie. Film equipment (cameras, lighting rigs, microphone booms, clapperboards, cables) is visible in the background. Lighting follows the film's aesthetic. Kodak Vision3 500T film grain, warm vintage tone. Ultra-photorealistic, candid behind-the-scenes style.`;
 
-                    const promptStr = `A highly realistic behind-the-scenes movie set photograph for the film "${movie || 'DUNE'}". The actor is wearing a cinematic costume. Film set elements like cameras, lighting, and microphones are subtly visible in the background. Cinematic lighting, Kodak Vision3 500T film grain, vintage moody vibe. The character faces the camera with a confident expression. High detail, photorealistic.`;
-
-                    const response = await ai.models.generateImages({
-                        model: 'imagen-3.0-generate-002',
-                        prompt: promptStr,
-                        config: {
-                            numberOfImages: 1,
-                            aspectRatio: "16:9",
-                            outputMimeType: "image/jpeg"
+                    const res = await fetch(
+                        `https://api.gptsapi.net/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [
+                                        { inline_data: { data: imgB64, mime_type: "image/jpeg" } },
+                                        { text: promptStr }
+                                    ]
+                                }],
+                                generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
+                            })
                         }
-                    });
+                    );
 
-                    if (response.generatedImages && response.generatedImages.length > 0) {
-                        setResult(response.generatedImages[0].image.imageBytes);
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err?.error?.message || `HTTP ${res.status}`);
+                    }
+
+                    const data = await res.json();
+                    const parts = data?.candidates?.[0]?.content?.parts || [];
+                    let imageData = null;
+                    for (const part of parts) {
+                        if (part.inline_data?.data) { imageData = part.inline_data.data; break; }
+                        if (part.inlineData?.data) { imageData = part.inlineData.data; break; }
+                    }
+
+                    if (imageData) {
+                        setResult(imageData);
                     } else {
-                        throw new Error("No image data returned from AI.");
+                        throw new Error("No image in response. Parts: " + JSON.stringify(parts).slice(0, 200));
                     }
                 } catch (e) {
                     console.error("AI Generation failed:", e);
-                    alert("AI Error: " + e.message + " (Returning original image as fallback)");
+                    alert("AI Error: " + e.message);
                     setResult(imgB64);
                 } finally {
                     setIsGenerating(false);
                 }
             };
+
 
             return (
                 <div className="h-screen flex flex-col p-8 overflow-auto container mx-auto" >
