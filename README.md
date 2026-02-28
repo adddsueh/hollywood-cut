@@ -6,7 +6,7 @@
 
 *AI-Powered Cinematic Set Photo Generator — Powered by Google Gemini Imagen*
 
-[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue?logo=github)](https://ddjajaja27.github.io/HollywoodCut/)
+[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-blue?logo=github)](https://adddsueh.github.io/HollywoodCut/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with Gemini](https://img.shields.io/badge/AI-Google%20Gemini-4285F4?logo=google)](https://aistudio.google.com/)
 
@@ -58,7 +58,7 @@ No server. No backend. No API key ever leaves your browser.
 ### 1. Clone the repo
 
 ```bash
-git clone https://github.com/ddjajaja27/HollywoodCut.git
+git clone https://github.com/adddsueh/HollywoodCut.git
 cd HollywoodCut
 ```
 
@@ -103,7 +103,7 @@ Install the [Live Server](https://marketplace.visualstudio.com/items?itemName=ri
 5. Click **Save** — your site will be live at:
 
 ```
-https://<your-username>.github.io/HollywoodCut/
+https://adddsueh.github.io/HollywoodCut/
 ```
 
 > No build step needed. This is a pure static site.
