@@ -142,10 +142,11 @@
                 setIsGenerating(true);
 
                 try {
-                    const promptStr = `Using the uploaded portrait as the sole face reference, generate a highly realistic behind-the-scenes movie set photograph for the film "${movie || 'DUNE'}". Preserve the person's exact facial features, bone structure, skin tone, hairstyle, and expression from the reference photo. Place them on a cinematic film set wearing a costume appropriate for the movie. Film equipment (cameras, lighting rigs, microphone booms, clapperboards, cables) is visible in the background. Lighting follows the film's aesthetic. Kodak Vision3 500T film grain, warm vintage tone. Ultra-photorealistic, candid behind-the-scenes style.`;
+                    // WildCard proxy DOES NOT support Gemini image-to-image experimentally, switching to DALL-E-3
+                    const promptStr = `A highly realistic behind-the-scenes movie set photograph for the film "${movie || 'DUNE'}". The main character is wearing a cinematic costume. Film equipment (cameras, lighting rigs, microphone booms, clapperboards) is visible in the background. Lighting follows the film's aesthetic. Kodak Vision3 500T film grain, warm vintage tone. Ultra-photorealistic, candid behind-the-scenes style.`;
 
                     const res = await fetch(
-                        `https://api.gptsapi.net/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
+                        `https://api.gptsapi.net/v1/images/generations`,
                         {
                             method: "POST",
                             headers: {
@@ -153,13 +154,11 @@
                                 "Authorization": `Bearer ${apiKey}`
                             },
                             body: JSON.stringify({
-                                contents: [{
-                                    parts: [
-                                        { inline_data: { data: imgB64, mime_type: "image/jpeg" } },
-                                        { text: promptStr }
-                                    ]
-                                }],
-                                generationConfig: { responseModalities: ["IMAGE", "TEXT"] }
+                                model: "dall-e-3",
+                                prompt: promptStr,
+                                n: 1,
+                                size: "1024x1024",
+                                response_format: "b64_json"
                             })
                         }
                     );
@@ -170,17 +169,12 @@
                     }
 
                     const data = await res.json();
-                    const parts = data?.candidates?.[0]?.content?.parts || [];
-                    let imageData = null;
-                    for (const part of parts) {
-                        if (part.inline_data?.data) { imageData = part.inline_data.data; break; }
-                        if (part.inlineData?.data) { imageData = part.inlineData.data; break; }
-                    }
+                    const imageData = data.data?.[0]?.b64_json;
 
                     if (imageData) {
-                        setResult(imageData);
+                        setResult(`data:image/jpeg;base64,${imageData}`);
                     } else {
-                        throw new Error("No image in response. Parts: " + JSON.stringify(parts).slice(0, 200));
+                        throw new Error("No image in response.");
                     }
                 } catch (e) {
                     console.error("AI Generation failed:", e);
@@ -190,6 +184,7 @@
                     setIsGenerating(false);
                 }
             };
+
 
 
             return (
